@@ -1,0 +1,6 @@
+n kappaletta nodeja ja niitten väliset kytkökset
+
+connection: 
+
+node: id, x, y, connections[8]
+connection: node_id1, node_id2, curve_anchor_x, curve_anchor_y

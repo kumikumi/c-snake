@@ -1,0 +1,3 @@
+Wrote this in an evening at a lan party for fun
+
+gcc main.c $(pkg-config --cflags --libs sdl2)
