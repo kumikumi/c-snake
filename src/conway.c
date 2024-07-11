@@ -18,6 +18,7 @@ typedef struct
 } Cell;
 
 Cell grid[GRID_WIDTH][GRID_HEIGHT];
+SDL_Texture *texture;
 SDL_Renderer *renderer;
 bool isPaused = false;
 
@@ -105,27 +106,27 @@ void update_grid()
 
 void draw_grid()
 {
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-    SDL_RenderClear(renderer);
+    Uint32 *pixels = NULL;
+    int pitch;
+
+    if (SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch) < 0)
+    {
+        printf("Unable to lock texture: %s\n", SDL_GetError());
+        return;
+    }
 
     for (int x = 0; x < GRID_WIDTH; x++)
     {
         for (int y = 0; y < GRID_HEIGHT; y++)
         {
-            if (grid[x][y].current)
-            {
-                SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-            }
-            else
-            {
-                SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-            }
-
-            SDL_Rect cellRect = {x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
-            SDL_RenderFillRect(renderer, &cellRect);
+            Uint32 color = grid[x][y].current ? 0xFFFFFFFF : 0x000000FF;
+            pixels[y * GRID_WIDTH + x] = color;
         }
     }
-    SDL_RenderPresent(renderer);
+
+    SDL_UnlockTexture(texture);
+
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
 }
 
 void handle_mouse_click(int x, int y)
@@ -167,6 +168,13 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, GRID_WIDTH, GRID_HEIGHT);
+    if (!texture)
+    {
+        printf("Texture could not be created!\nSDL_Error: %s\n", SDL_GetError());
+        return 0;
+    }
+
     clear_grid();
 
     bool quit = false;
@@ -205,23 +213,25 @@ int main(int argc, char *argv[])
             }
         }
 
-        unsigned int start_simulation_time = get_time_ms();
-        if (!isPaused && get_time_ms() - lastTime > 50) // Adjusted timing
+        if (!isPaused /*&& get_time_ms() - lastTime > 50*/) // Adjusted timing
         {
+            unsigned int start_simulation_time = get_time_ms();
             update_grid();
-            lastTime = get_time_ms();
+            unsigned int end_simulation_time = get_time_ms();
+
+            unsigned int start_rendering_time = end_simulation_time;
+            draw_grid();
+            unsigned int end_rendering_time = get_time_ms();
+
+            printf("Simulation Time: %u ms, Rendering Time: %u ms\n",
+                end_simulation_time - start_simulation_time,
+                end_rendering_time - start_rendering_time);
+            SDL_RenderPresent(renderer);
+            lastTime = SDL_GetTicks();
         }
-        unsigned int end_simulation_time = get_time_ms();
-
-        unsigned int start_rendering_time = end_simulation_time;
-        draw_grid();
-        unsigned int end_rendering_time = get_time_ms();
-
-        printf("Simulation Time: %u ms, Rendering Time: %u ms\n",
-               end_simulation_time - start_simulation_time,
-               end_rendering_time - start_rendering_time);
     }
 
+    SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
