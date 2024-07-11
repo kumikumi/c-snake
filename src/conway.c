@@ -48,50 +48,22 @@ void randomize_grid()
 
 void update_grid()
 {
+    static const int dx[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    static const int dy[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
     for (int x = 0; x < GRID_WIDTH; x++)
     {
         for (int y = 0; y < GRID_HEIGHT; y++)
         {
             int aliveNeighbors = 0;
-            for (int dx = -1; dx <= 1; dx++)
+            for (int i = 0; i < 8; i++)
             {
-                for (int dy = -1; dy <= 1; dy++)
-                {
-                    if (dx == 0 && dy == 0)
-                        continue;
-
-                    int nx = (x + dx + GRID_WIDTH) % GRID_WIDTH;
-                    int ny = (y + dy + GRID_HEIGHT) % GRID_HEIGHT;
-
-                    if (grid[nx][ny].current)
-                    {
-                        aliveNeighbors++;
-                    }
-                }
+                int nx = (x + dx[i] + GRID_WIDTH) % GRID_WIDTH;
+                int ny = (y + dy[i] + GRID_HEIGHT) % GRID_HEIGHT;
+                aliveNeighbors += grid[nx][ny].current;
             }
 
-            if (grid[x][y].current)
-            {
-                if (aliveNeighbors < 2 || aliveNeighbors > 3)
-                {
-                    grid[x][y].next = false;
-                }
-                else
-                {
-                    grid[x][y].next = true;
-                }
-            }
-            else
-            {
-                if (aliveNeighbors == 3)
-                {
-                    grid[x][y].next = true;
-                }
-                else
-                {
-                    grid[x][y].next = false;
-                }
-            }
+            grid[x][y].next = (grid[x][y].current && (aliveNeighbors == 2 || aliveNeighbors == 3)) || (!grid[x][y].current && aliveNeighbors == 3);
         }
     }
 
@@ -213,22 +185,22 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (!isPaused /*&& get_time_ms() - lastTime > 50*/) // Adjusted timing
+        unsigned int start_simulation_time = get_time_ms();
+        if (!isPaused) // Better coupling without additional delay
         {
-            unsigned int start_simulation_time = get_time_ms();
             update_grid();
-            unsigned int end_simulation_time = get_time_ms();
-
-            unsigned int start_rendering_time = end_simulation_time;
-            draw_grid();
-            unsigned int end_rendering_time = get_time_ms();
-
-            printf("Simulation Time: %u ms, Rendering Time: %u ms\n",
-                end_simulation_time - start_simulation_time,
-                end_rendering_time - start_rendering_time);
-            SDL_RenderPresent(renderer);
-            lastTime = SDL_GetTicks();
         }
+        unsigned int end_simulation_time = get_time_ms();
+
+        unsigned int start_rendering_time = end_simulation_time;
+        draw_grid();
+        unsigned int end_rendering_time = get_time_ms();
+
+        printf("Simulation Time: %u ms, Rendering Time: %u ms\n",
+               end_simulation_time - start_simulation_time,
+               end_rendering_time - start_rendering_time);
+
+        SDL_RenderPresent(renderer);
     }
 
     SDL_DestroyTexture(texture);
