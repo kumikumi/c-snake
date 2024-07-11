@@ -109,11 +109,6 @@ void handle_mouse_click(int x, int y)
     grid[gridX][gridY].current = !grid[gridX][gridY].current;
 }
 
-unsigned int get_time_ms()
-{
-    return SDL_GetTicks();
-}
-
 int main(int argc, char *argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -151,7 +146,7 @@ int main(int argc, char *argv[])
 
     bool quit = false;
     SDL_Event e;
-    unsigned int lastTime = get_time_ms();
+    unsigned int lastTime = SDL_GetTicks();
     while (!quit)
     {
         while (SDL_PollEvent(&e) != 0)
@@ -185,16 +180,16 @@ int main(int argc, char *argv[])
             }
         }
 
-        unsigned int start_simulation_time = get_time_ms();
+        unsigned int start_simulation_time = SDL_GetTicks();
         if (!isPaused) // Better coupling without additional delay
         {
             update_grid();
         }
-        unsigned int end_simulation_time = get_time_ms();
+        unsigned int end_simulation_time = SDL_GetTicks();
 
         unsigned int start_rendering_time = end_simulation_time;
         draw_grid();
-        unsigned int end_rendering_time = get_time_ms();
+        unsigned int end_rendering_time = SDL_GetTicks();
 
         printf("Simulation Time: %u ms, Rendering Time: %u ms\n",
                end_simulation_time - start_simulation_time,
